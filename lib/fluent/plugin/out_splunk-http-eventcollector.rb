@@ -1,30 +1,28 @@
-=begin
-
-Copyright (c) 2015, Bryce Chidester (Calyptix Security)
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-=end
+#
+# Copyright (c) 2015, Bryce Chidester (Calyptix Security)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
 
 # Splunk HTTP Event collector docs
 # http://dev.splunk.com/view/event-collector/SP-CAAAE6M
@@ -32,49 +30,48 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 module Fluent
   class SplunkHTTPEventcollectorOutput < BufferedOutput
-
     Plugin.register_output('splunk-http-eventcollector', self)
 
-    config_param :test_mode, :bool, :default => false
+    config_param :test_mode, :bool, default: false
 
-    config_param :server, :string, :default => 'localhost:8088'
-    config_param :verify, :bool, :default => true
-    config_param :token, :string, :default => nil
+    config_param :server, :string, default: 'localhost:8088'
+    config_param :verify, :bool, default: true
+    config_param :token, :string, default: nil
 
-    config_param :proxy, :string, :default => nil
+    config_param :proxy, :string, default: nil
 
     # Event parameters
-    config_param :protocol, :string, :default => 'https'
-    config_param :host, :string, :default => nil
-    config_param :index, :string, :default => 'main'
-    config_param :all_items, :bool, :default => false
+    config_param :protocol, :string, default: 'https'
+    config_param :host, :string, default: nil
+    config_param :index, :string, default: 'main'
+    config_param :all_items, :bool, default: false
 
-    config_param :sourcetype, :string, :default => 'fluentd'
-    config_param :source, :string, :default => nil
-    config_param :post_retry_max, :integer, :default => 5
-    config_param :post_retry_interval, :integer, :default => 5
+    config_param :sourcetype, :string, default: 'fluentd'
+    config_param :source, :string, default: nil
+    config_param :post_retry_max, :integer, default: 5
+    config_param :post_retry_interval, :integer, default: 5
 
     # Splunk default upper-limit is ~1Mb
-    config_param :batch_size_limit, :integer, :default => 1000000 # 65535
-    #config_param :batch_event_limit, :integer, :default => 100
+    config_param :batch_size_limit, :integer, default: 1_000_000 # 65535
+    # config_param :batch_event_limit, :integer, :default => 100
 
     # Whether to allow non-UTF-8 characters in user logs. If set to true, any
     # non-UTF-8 character would be replaced by the string specified by
     # 'non_utf8_replacement_string'. If set to false, any non-UTF-8 character
     # would trigger the plugin to error out.
-    config_param :coerce_to_utf8, :bool, :default => true
+    config_param :coerce_to_utf8, :bool, default: true
 
     # If 'coerce_to_utf8' is set to true, any non-UTF-8 character would be
     # replaced by the string specified here.
-    config_param :non_utf8_replacement_string, :string, :default => ' '
+    config_param :non_utf8_replacement_string, :string, default: ' '
 
     # Called on class load (class initializer)
     def initialize
       super
-      log.trace "splunk-http-eventcollector(initialize) called"
+      log.trace 'splunk-http-eventcollector(initialize) called'
       require 'net/http/persistent'
       require 'openssl'
-    end  # initialize
+    end # initialize
 
     # Thanks to
     # https://github.com/kazegusuri/fluent-plugin-prometheus/blob/348c112d/lib/fluent/plugin/prometheus.rb
@@ -108,15 +105,15 @@ module Fluent
     ## If the configuration is invalid, raise Fluent::ConfigError.
     def configure(conf)
       super
-      log.trace "splunk-http-eventcollector(configure) called"
+      log.trace 'splunk-http-eventcollector(configure) called'
       begin
         @splunk_uri = URI "#{@protocol}://#{@server}/services/collector/event"
       rescue URI::Error => e
-        raise ConfigError, "Unable to parse the server into a URI."
+        raise ConfigError, 'Unable to parse the server into a URI.'
       end
 
       unless @proxy.nil?
-        if @proxy.downcase == 'env'
+        if @proxy.casecmp('env').zero?
           @proxy = :ENV
         else
           begin
@@ -129,20 +126,20 @@ module Fluent
 
       @placeholder_expander = Fluent::SplunkHTTPEventcollectorOutput.placeholder_expander(log)
       @hostname = Socket.gethostname
-      # TODO Add other robust input/syntax checks.
-    end  # configure
+      # TODO: Add other robust input/syntax checks.
+    end # configure
 
     ## Copied from Net::HTTP::Persistent
     # Adds "http://" to the String +uri+ if it is missing.
-    def normalize_uri uri
-      (uri =~ /^https?:/) ? uri : "http://#{uri}"
+    def normalize_uri(uri)
+      uri =~ /^https?:/ ? uri : "http://#{uri}"
     end
 
     ## This method is called when starting.
     ## Open sockets or files here.
     def start
       super
-      log.trace "splunk-http-eventcollector(start) called"
+      log.trace 'splunk-http-eventcollector(start) called'
 
       @http = Net::HTTP::Persistent.new('fluent-plugin-splunk-http-eventcollector', @proxy)
       @http.verify_mode = OpenSSL::SSL::VERIFY_NONE unless @verify
@@ -150,23 +147,23 @@ module Fluent
       @http.override_headers['User-Agent'] = 'fluent-plugin-splunk-http-eventcollector/0.0.1'
       @http.override_headers['Authorization'] = "Splunk #{@token}"
 
-      log.trace "initialized for splunk-http-eventcollector"
+      log.trace 'initialized for splunk-http-eventcollector'
     end
 
     ## This method is called when shutting down.
     ## Shutdown the thread and close sockets or files here.
     def shutdown
       super
-      log.trace "splunk-http-eventcollector(shutdown) called"
+      log.trace 'splunk-http-eventcollector(shutdown) called'
 
       @http.shutdown
-      log.trace "shutdown from splunk-http-eventcollector"
-    end  # shutdown
+      log.trace 'shutdown from splunk-http-eventcollector'
+    end # shutdown
 
     ## This method is called when an event reaches to Fluentd. (like unbuffered emit())
     ## Convert the event to a raw string.
     def format(tag, time, record)
-      #log.trace "splunk-http-eventcollector(format) called"
+      # log.trace "splunk-http-eventcollector(format) called"
       # Basic object for Splunk. Note explicit type-casting to avoid accidental errors.
 
       placeholder_values = {
@@ -180,22 +177,22 @@ module Fluent
 
       splunk_object = Hash[
           # for v0.14 millisecs time precision
-          "time" => time.is_a?(Integer) ? time.to_i : time.to_f,
-          "source" => if @source.nil? then tag.to_s else @placeholder_expander.expand(@source, placeholders) end,
-          "sourcetype" => @placeholder_expander.expand(@sourcetype.to_s, placeholders),
-          "host" => @placeholder_expander.expand(@host.to_s, placeholders),
-          "index" =>  @placeholder_expander.expand(@index, placeholders)
+          'time' => time.is_a?(Integer) ? time.to_i : time.to_f,
+          'source' => @source.nil? ? tag.to_s : @placeholder_expander.expand(@source, placeholders),
+          'sourcetype' => @placeholder_expander.expand(@sourcetype.to_s, placeholders),
+          'host' => @placeholder_expander.expand(@host.to_s, placeholders),
+          'index' =>  @placeholder_expander.expand(@index, placeholders)
         ]
       # TODO: parse different source types as expected: KVP, JSON, TEXT
-      if @all_items
-        splunk_object["event"] = convert_to_utf8(record)
-      else
-        splunk_object["event"] = convert_to_utf8(record["message"])
-      end
+      splunk_object['event'] = if @all_items
+                                 convert_to_utf8(record)
+                               else
+                                 convert_to_utf8(record['message'])
+                               end
 
       json_event = splunk_object.to_json
-      #log.debug "Generated JSON(#{json_event.class.to_s}): #{json_event.to_s}"
-      #log.debug "format: returning: #{[tag, record].to_json.to_s}"
+      # log.debug "Generated JSON(#{json_event.class.to_s}): #{json_event.to_s}"
+      # log.debug "format: returning: #{[tag, record].to_json.to_s}"
       json_event
     end
 
@@ -210,44 +207,44 @@ module Fluent
     ##
     ## NOTE! This method is called by internal thread, not Fluentd's main thread. So IO wait doesn't affect other plugins.
     def write(chunk)
-      log.trace "splunk-http-eventcollector(write) called"
+      log.trace 'splunk-http-eventcollector(write) called'
 
       # Break the concatenated string of JSON-formatted events into an Array
-      split_chunk = chunk.read.split("}{").each do |x|
+      split_chunk = chunk.read.split('}{').each do |x|
         # Reconstruct the opening{/closing} that #split() strips off.
-        x.prepend("{") unless x.start_with?("{")
-        x << "}" unless x.end_with?("}")
+        x.prepend('{') unless x.start_with?('{')
+        x << '}' unless x.end_with?('}')
       end
-      log.debug "Pushing #{numfmt(split_chunk.size)} events (" +
-          "#{numfmt(chunk.read.bytesize)} bytes) to Splunk."
+      log.debug "Pushing #{numfmt(split_chunk.size)} events (" \
+                "#{numfmt(chunk.read.bytesize)} bytes) to Splunk."
       # If fluentd is pushing too much data to Splunk at once, split up the payload
       # Don't care about the number of events so much as the POST size (bytes)
-      #if split_chunk.size > @batch_event_limit
+      # if split_chunk.size > @batch_event_limit
       #  log.warn "Fluentd is attempting to push #{numfmt(split_chunk.size)} " +
       #      "events in a single push to Splunk. The configured limit is " +
       #      "#{numfmt(@batch_event_limit)}."
-      #end
+      # end
       if chunk.read.bytesize > @batch_size_limit
-        log.warn "Fluentd is attempting to push #{numfmt(chunk.read.bytesize)} " +
-            "bytes in a single push to Splunk. The configured limit is " +
-            "#{numfmt(@batch_size_limit)} bytes."
-        newbuffer = Array.new
+        log.warn "Fluentd is attempting to push #{numfmt(chunk.read.bytesize)} " \
+                 'bytes in a single push to Splunk. The configured limit is ' \
+                 "#{numfmt(@batch_size_limit)} bytes."
+        newbuffer = []
         split_chunk_counter = 0
         split_chunk.each do |c|
-          split_chunk_counter = split_chunk_counter + 1
-          #log.debug "(#{numfmt(split_chunk_counter)}/#{numfmt(split_chunk.size)}) " +
+          split_chunk_counter += 1
+          # log.debug "(#{numfmt(split_chunk_counter)}/#{numfmt(split_chunk.size)}) " +
           #    "newbuffer.bytesize=#{numfmt(newbuffer.join.bytesize)} + " +
           #    "c.bytesize=#{numfmt(c.bytesize)} ????"
           if newbuffer.join.bytesize + c.bytesize < @batch_size_limit
-            #log.debug "Appended!"
+            # log.debug "Appended!"
             newbuffer << c
           else
             # Reached the limit - push the current newbuffer.join, and reset
-            #log.debug "Would exceed limit. Flushing newbuffer and continuing."
-            log.debug "(#{numfmt(split_chunk_counter)}/#{numfmt(split_chunk.size)}) " +
-                "newbuffer.bytesize=#{numfmt(newbuffer.join.bytesize)} + " +
-                "c.bytesize=#{numfmt(c.bytesize)} > #{numfmt(@batch_size_limit)}, " +
-                "flushing current buffer to Splunk."
+            # log.debug "Would exceed limit. Flushing newbuffer and continuing."
+            log.debug "(#{numfmt(split_chunk_counter)}/#{numfmt(split_chunk.size)}) " \
+                      "newbuffer.bytesize=#{numfmt(newbuffer.join.bytesize)} + " \
+                      "c.bytesize=#{numfmt(c.bytesize)} > #{numfmt(@batch_size_limit)}, " \
+                      'flushing current buffer to Splunk.'
             push_buffer newbuffer.join
             newbuffer = Array c
           end # if/else buffer fits limit
@@ -271,21 +268,21 @@ module Fluent
       # retry up to :post_retry_max times
       1.upto(@post_retry_max) do |c|
         response = @http.request @splunk_uri, post
-        log.debug "=>(#{c}/#{numfmt(@post_retry_max)}) #{response.code} " +
-            "(#{response.message})"
-        # TODO check the actual server response too (it's JSON)
-        if response.code == "200"  # and...
+        log.debug "=>(#{c}/#{numfmt(@post_retry_max)}) #{response.code} " \
+                  "(#{response.message})"
+        # TODO: check the actual server response too (it's JSON)
+        if response.code == '200' # and...
           # success
           break
-        # TODO check 40X response within post_retry_max and retry
-        elsif response.code.match(/^50/) and c < @post_retry_max
+        # TODO: check 40X response within post_retry_max and retry
+        elsif response.code.match(/^50/) && (c < @post_retry_max)
           # retry
-          log.warn "#{@splunk_uri}: Server error #{response.code} (" +
-              "#{response.message}). Retrying in #{@post_retry_interval} " +
-              "seconds.\n#{response.body}"
+          log.warn "#{@splunk_uri}: Server error #{response.code} (" \
+                   "#{response.message}). Retrying in #{@post_retry_interval} " \
+                   "seconds.\n#{response.body}"
           sleep @post_retry_interval
           next
-        elsif response.code.match(/^40/)
+        elsif response.code =~ /^40/
           # user error
           log.error "#{@splunk_uri}: #{response.code} (#{response.message})\n#{response.body}"
           break
@@ -329,7 +326,8 @@ module Fluent
           'utf-8',
           invalid: :replace,
           undef: :replace,
-          replace: @non_utf8_replacement_string)
+          replace: @non_utf8_replacement_string
+        )
       else
         begin
           input.encode('utf-8')
@@ -342,5 +340,5 @@ module Fluent
         end
       end
     end
-  end  # class SplunkHTTPEventcollectorOutput
-end  # module Fluent
+  end # class SplunkHTTPEventcollectorOutput
+end # module Fluent
