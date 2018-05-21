@@ -34,6 +34,8 @@ module Fluent
 
     config_param :test_mode, :bool, default: false
 
+    config_param :send_fields, :bool, default: false
+
     config_param :server, :string, default: 'localhost:8088'
     config_param :verify, :bool, default: true
     config_param :token, :string, default: nil
@@ -48,6 +50,7 @@ module Fluent
 
     config_param :sourcetype, :string, default: 'fluentd'
     config_param :source, :string, default: nil
+    config_param :fields, :string, default: nil
     config_param :post_retry_max, :integer, default: 5
     config_param :post_retry_interval, :integer, default: 5
 
@@ -183,6 +186,13 @@ module Fluent
           'host' => @placeholder_expander.expand(@host.to_s, placeholders),
           'index' =>  @placeholder_expander.expand(@index, placeholders)
         ]
+
+      if @send_fields
+        splunk_object = splunk_object.merge(Hash[
+            'fields' => JSON.parse(@placeholder_expander.expand(@fields.to_s, placeholders))
+        ])
+      end
+
       # TODO: parse different source types as expected: KVP, JSON, TEXT
       splunk_object['event'] = if @all_items
                                  convert_to_utf8(record)
